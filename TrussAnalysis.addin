@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<RevitAddIns>
+	<AddIn Type="Application">
+		<Name>TrussAnalysis</Name>
+		<Assembly>TrussAnalysis\TrussAnalysis.dll</Assembly>
+		<AddInId>0B7A9F3F-2A33-466B-A01B-3A0EFC78DF69</AddInId>
+		<FullClassName>TrussAnalysis.Main</FullClassName>
+		<VendorId>Marwa</VendorId>
+		<VendorDescription>Marwa</VendorDescription>
+	</AddIn>
+</RevitAddIns>
