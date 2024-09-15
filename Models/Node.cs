@@ -16,6 +16,7 @@ namespace TrussAnalysis.Models
         public double Fx { get; set; }
         public double Fy { get; set; }
 
+        public int Order { get; set; }
         public bool ExternalLoadBearing { get; set; }
 
         public static List<Node> ProcessNodes(List<StructuralConnectionHandler> connectors, bool loadBearing)
@@ -32,6 +33,13 @@ namespace TrussAnalysis.Models
             ExternalLoadBearing = loadBearing;
             Fx = 0;
             Fy = 0;
+
+            string mark = connector.get_Parameter(BuiltInParameter.ALL_MODEL_MARK).AsValueString();
+            if (string.IsNullOrEmpty(mark))
+            {
+                int.TryParse(mark, out int mark_int);
+                Order = mark_int;
+            }
         }
 
     }
