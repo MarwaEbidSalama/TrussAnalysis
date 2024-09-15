@@ -5,7 +5,13 @@ namespace TrussAnalysis
 {
     internal class DoubleComparer : IEqualityComparer<double>
     {
-        double tolerance = 0.0001;
+        double tolerance {  get; set; }
+
+        public DoubleComparer( double tol)
+        {
+                this.tolerance = tol;
+        }
+
         public bool Equals(double x, double y)
         {
             if (Math.Abs(Math.Abs(x) - Math.Abs(y)) < tolerance)

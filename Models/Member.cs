@@ -10,11 +10,14 @@ namespace TrussAnalysis.Models
     public class Member
     {
         public double YoungModulus { get; set; }
+        public double YieldStress { get; private set; }
         public double Length { get; set; }
         public double Area { get; set; }
         public double k_member { get; set; }
         public Matrix<double> k_local { get; set; }
         public Matrix<double> K_Global { get; set; }
+        public Vector<double> U_local { get; set; }
+        public Vector<double> N_local { get; set; }
         public XYZ direction { get; set; }
         public double AngleBetTrussLocationLine { get; set; }
         public Matrix<double> TransformationMatrix { get; set; }
@@ -23,10 +26,11 @@ namespace TrussAnalysis.Models
         public Node EndNode { get; set; }
         public Line LocationLine { get; set; }
         public FamilyInstance Element { get; set; }
+        public ElementId Id { get; set; }
 
         private Document doc;
-
         public string StructuralUsage { get; set; }
+        public string Name { get; private set; }
 
         public static List<Member> ProcessMembers(Truss truss)
         {
@@ -41,10 +45,16 @@ namespace TrussAnalysis.Models
 
         public Member(FamilyInstance instance, XYZ trussDirection)
         {
+            this.Id = instance.Id;
+            this.Element = instance;
             this.doc = instance.Document;
             this.StructuralUsage = instance.StructuralUsage.ToString();
+
             this.YoungModulus = (doc.GetElement((doc.GetElement(instance.StructuralMaterialId) as Material).StructuralAssetId) as PropertySetElement)
                                 .GetStructuralAsset().YoungModulus.X;
+            this.YieldStress = (doc.GetElement((doc.GetElement(instance.StructuralMaterialId) as Material).StructuralAssetId) as PropertySetElement)
+                    .GetStructuralAsset().MinimumYieldStress;
+
             this.LocationLine = (instance.Location as LocationCurve).Curve as Line;
             this.direction = LocationLine.Direction;
             this.Length = LocationLine.Length;
@@ -88,6 +98,14 @@ namespace TrussAnalysis.Models
         private void CreateStiffnessMatrix_Globally()
         {
             this.K_Global = TransformationMatrix.Transpose() * k_local * TransformationMatrix;
+
+            for (int i = 0; i < K_Global.RowCount; i++)
+            {
+                for (int j = 0; j < K_Global.ColumnCount; j++)
+                {
+                    this.K_Global[i,j] = MathUtils.RoundToNearest((long)this.K_Global[i, j], 1000);
+                }
+            }
         }
 
         private void CreateStiffnessMatrix_Locally()
@@ -102,19 +120,27 @@ namespace TrussAnalysis.Models
             this.k_local = m * k_member;
         }
 
-        private void AssignNodes(Node node)
+        public void AssignNodes(Node node)
         {
-            List<XYZ> endpoints = LocationLine.Tessellate().ToList().OrderBy(x => x.X).ToList();
-            XYZComparer comparer =  new XYZComparer();
+            if (StartNode == null || EndNode == null)
+            {
+                List<XYZ> endpoints = LocationLine.Tessellate().ToList().OrderBy(x => x.X).ToList();
+                XYZComparer comparer = new XYZComparer();
 
-            if (comparer.Equals(node.Location, endpoints[0]))
-            {
-                this.StartNode = node;
+                if (comparer.Equals(node.Location, endpoints[0]))
+                {
+                    this.StartNode = node;
+                }
+                else if (comparer.Equals(node.Location, endpoints[1]))
+                {
+                    this.EndNode = node;
+                }
             }
-            else if (comparer.Equals(node.Location, endpoints[1]))
-            {
-                this.EndNode = node;
-            }
+        }
+
+        public void AssignMemberNameInSystem()
+        {
+            this.Name = StartNode.Name + "-" + EndNode.Name;
         }
 
     }

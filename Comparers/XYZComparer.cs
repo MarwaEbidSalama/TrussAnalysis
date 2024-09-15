@@ -13,7 +13,7 @@ namespace TrussAnalysis
         private DoubleComparer doubleComparer;
         public XYZComparer()
         {
-           doubleComparer = new DoubleComparer();
+           doubleComparer = new DoubleComparer(3.5);
         }
 
         public new bool Equals(XYZ x, XYZ y)

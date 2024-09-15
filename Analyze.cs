@@ -21,16 +21,14 @@ namespace TrussAnalysis
             UIDocument uidoc = commandData.Application.ActiveUIDocument;
             Document doc = commandData.Application.ActiveUIDocument.Document;
 
+            List<Element> allElements = SelectSystem(uidoc);
             Truss truss = SelectTruss(uidoc) as Truss;
-
-            List<StructuralConnectionHandler> loadbearing_connections = SelectConnections(uidoc, "load bearing");
-            List<StructuralConnectionHandler> connections = SelectConnections(uidoc, "rest of the");
+            List<StructuralConnectionHandler> loadbearing_connections = SelectConnections(uidoc);
 
             List<Member> members = Member.ProcessMembers(truss);
-            List<Node> nodes = Node.ProcessNodes(loadbearing_connections, true);
-            nodes.AddRange(Node.ProcessNodes(connections, false));
+            List<Node> nodes = Node.ProcessNodes(loadbearing_connections, allElements, members);
 
-
+            TrussSystem system = new TrussSystem(members, nodes);
 
 
             return Result.Succeeded;
@@ -40,21 +38,35 @@ namespace TrussAnalysis
         {
             try
             {
-                Autodesk.Revit.DB.Reference reference = uidoc.Selection.PickObject(ObjectType.Element,new TrussSelection(), "Please Select the Truss for Analysis");
+                Autodesk.Revit.DB.Reference reference = uidoc.Selection.PickObject(ObjectType.Element, new TrussSelection(), "Please Select the Truss for Analysis");
                 return uidoc.Document.GetElement(reference.ElementId);
             }
             catch (Exception)
             {
-                return null;    
+                return null;
             }
         }
 
-        private List<StructuralConnectionHandler> SelectConnections(UIDocument uidoc, string extra)
+        private List<StructuralConnectionHandler> SelectConnections(UIDocument uidoc)
         {
             try
             {
-                List<Autodesk.Revit.DB.Reference> references = uidoc.Selection.PickObjects(ObjectType.Element, new ConnectionSelection(), $"Please Select the {extra} Truss Connections")?.ToList();
-                List<StructuralConnectionHandler> connectors = references.Select(x=>uidoc.Document.GetElement(x.ElementId) as StructuralConnectionHandler).ToList();
+                List<Autodesk.Revit.DB.Reference> references = uidoc.Selection.PickObjects(ObjectType.Element, new ConnectionSelection(), $"Please Select the Truss Connections")?.ToList();
+                List<StructuralConnectionHandler> connectors = references.Select(x => uidoc.Document.GetElement(x.ElementId) as StructuralConnectionHandler).ToList();
+                return connectors;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        private List<Element> SelectSystem(UIDocument uidoc)
+        {
+            try
+            {
+                List<Autodesk.Revit.DB.Reference> references = uidoc.Selection.PickObjects(ObjectType.Element, $"Please Select the system elements that contribute to self-load.")?.ToList();
+                List<Element> connectors = references.Select(x => uidoc.Document.GetElement(x.ElementId)).ToList();
                 return connectors;
             }
             catch (Exception)
@@ -73,12 +85,19 @@ namespace TrussAnalysis
 
         bool ISelectionFilter.AllowElement(Element elem)
         {
-            if (elem.Category.Id.IntegerValue == (int)BuiltInCategory.OST_StructuralTruss)
+            try
             {
-                return true;    
-            }
+                if (elem.Category.Id.IntegerValue == (int)BuiltInCategory.OST_StructuralTruss)
+                {
+                    return true;
+                }
 
-            return false;
+                return false;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
     }
 
@@ -91,12 +110,19 @@ namespace TrussAnalysis
 
         bool ISelectionFilter.AllowElement(Element elem)
         {
-            if (elem.Category.Id.IntegerValue == (int)BuiltInCategory.OST_StructConnections)
+            try
             {
-                return true;
-            }
+                if (elem.Category.Id.IntegerValue == (int)BuiltInCategory.OST_StructConnections)
+                {
+                    return true;
+                }
 
-            return false;
+                return false;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
     }
