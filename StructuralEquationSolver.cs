@@ -44,7 +44,7 @@ namespace TrussAnalysis
             Vector<double> Uu = Kuu.Solve(Fu - Kuk * Uk);
 
             // Calculate reactions
-            Vector<double> R = Kku * Uu + Kkk * Uk - ForcesOnSupports;
+            Vector<double> R = Kku * Uu + Kkk * Uk + ForcesOnSupports;
 
             // Combine results
             Vector<double> U = Vector<double>.Build.Dense(n);

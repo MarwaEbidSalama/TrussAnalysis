@@ -1,14 +1,17 @@
 ﻿using MathNet.Numerics.LinearAlgebra;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using static TrussAnalysis.StructuralEqSolver;
 
 namespace TrussAnalysis.Models
 {
     internal class TrussSystem
     {
         public double FactorOfSafety { get; }
-        List<Member> Members { get; set; }
-        List<Node> Nodes { get; set; }
+        public List<Member> Members { get; set; }
+        public List<Node> Nodes { get; set; }
         public int DOF { get; }
 
         public Matrix<double> StiffnessMatrix { get; set; }
@@ -36,8 +39,8 @@ namespace TrussAnalysis.Models
             this.ForceVector_Braking = Vector<double>.Build.Dense(DOF);
             this.ForceVector_Combined = Vector<double>.Build.Dense(DOF);
 
-            this.KnownR= new bool[DOF];
-            this.KnownU = new bool[DOF];    
+            this.KnownR = new bool[DOF];
+            this.KnownU = new bool[DOF];
 
             this.DisplacementVector = Vector<double>.Build.Dense(DOF);
 
@@ -45,12 +48,29 @@ namespace TrussAnalysis.Models
 
             CreateGlobalStiffnessMatrix();
 
-            CreateForceVectors(1.35, 1.5, 1.5); // Ultimate Limit State (ULS)
+            CreateForceVectors(1.35, 1.5, 1.5); // Ultimate Limit State (ULS) (1.35, 1.5, 1.5)
 
             CreateBools();
 
-            (DisplacementVector, ForceVector_Final) = StructuralEquationSolver.Solve(StiffnessMatrix, ForceVector_Combined, KnownR, KnownU, Vector<double>.Build.Dense(new double[] { 0,0,0,0 }));
+            //(DisplacementVector, ForceVector_Final) = StructuralEquationSolver.Solve(StiffnessMatrix, ForceVector_Combined, KnownR, KnownU, Vector<double>.Build.Dense(new double[] { 0, 0, 0, 0 }));
 
+            SystemEquation eq = new SystemEquation();
+            eq.KnownF = KnownR;
+            eq.F = ForceVector_Combined;
+            eq.K = StiffnessMatrix;
+
+            SolutionResult result = StructuralEqSolver.Solve(eq);
+
+            DisplacementVector = result.Displacement;
+            ForceVector_Final = result.Force;
+
+            CalculateStrainingActions();
+
+            PrintResult();
+        }
+
+        private void CalculateStrainingActions()
+        {
             foreach (Node node in Nodes)
             {
                 node.DOF1_Fx = ForceVector_Final[node.DOF1];
@@ -69,6 +89,8 @@ namespace TrussAnalysis.Models
 
                 member.U_local = member.TransformationMatrix * U_Global * member.TransformationMatrix.Transpose();
                 member.N_local = member.k_local * member.U_local;
+                member.StrainingAction = member.N_local[0];
+                member.InterpretForceSign();
             }
         }
 
@@ -142,6 +164,33 @@ namespace TrussAnalysis.Models
             {
                 member.AssignMemberNameInSystem();
             }
+        }
+
+        private void PrintResult()
+        {
+            string documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+
+            string filePath = Path.Combine(documentsPath, "truss_analysis.txt");
+
+            using (StringWriter stringWriter = new StringWriter())
+            {
+                stringWriter.WriteLine($"Total Dead Loads: = {ForceVector_Dead.Sum()}");
+                stringWriter.WriteLine($"Total Live Loads: = {ForceVector_Live.Sum()}");
+                stringWriter.WriteLine($"Total Breaking Loads: = {ForceVector_Braking.Sum()}");
+
+                stringWriter.WriteLine($"Check Y Loads equalibruim (must be zero): = {ForceVector_Final.Select((value, index) => new { value, index }).Where(x => x.index % 2 == 1).Aggregate(0.0, (sum, x) => sum + x.value)}");
+                stringWriter.WriteLine($"Check X Loads equalibruim (must be zero): = {ForceVector_Final.Select((value, index) => new { value, index }).Where(x => x.index % 2 != 1).Aggregate(0.0, (sum, x) => sum + x.value)}");
+
+                stringWriter.WriteLine($"Reactions and loads (Node A to Node S): {string.Join(", ", ForceVector_Final)}");
+                stringWriter.WriteLine($"Members straining actions: {string.Join(", ", Members.OrderBy(x=>x.Name).Select(x=>x.StrainingAction))}");
+                stringWriter.WriteLine($"Displacements (Node A to Node S): {string.Join(", ", DisplacementVector)}");
+
+                string content = stringWriter.ToString();
+
+                File.WriteAllText(filePath, content);
+            }
+
+            Console.WriteLine($"File created at: {filePath}");
         }
     }
 }

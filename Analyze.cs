@@ -1,4 +1,5 @@
 ﻿using Autodesk.Revit.Attributes;
+using Autodesk.Revit.Creation;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Structure;
 using Autodesk.Revit.UI;
@@ -19,7 +20,7 @@ namespace TrussAnalysis
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
             UIDocument uidoc = commandData.Application.ActiveUIDocument;
-            Document doc = commandData.Application.ActiveUIDocument.Document;
+            Autodesk.Revit.DB.Document doc = commandData.Application.ActiveUIDocument.Document;
 
             List<Element> allElements = SelectSystem(uidoc);
             Truss truss = SelectTruss(uidoc) as Truss;
@@ -27,9 +28,9 @@ namespace TrussAnalysis
 
             List<Member> members = Member.ProcessMembers(truss);
             List<Node> nodes = Node.ProcessNodes(loadbearing_connections, allElements, members);
-
             TrussSystem system = new TrussSystem(members, nodes);
 
+            RevitUtils.ShowResultsInRevit(uidoc, doc, system);
 
             return Result.Succeeded;
         }

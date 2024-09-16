@@ -77,6 +77,9 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="Comparers\XYZComparer.cs" />
+    <Compile Include="RainbowColorMapper.cs" />
+    <Compile Include="RevitUtils.cs" />
+    <Compile Include="StructuralEqSolver.cs" />
     <Compile Include="StructuralEquationSolver.cs" />
   </ItemGroup>
   <ItemGroup>

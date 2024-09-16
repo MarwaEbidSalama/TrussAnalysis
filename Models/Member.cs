@@ -31,6 +31,7 @@ namespace TrussAnalysis.Models
         private Document doc;
         public string StructuralUsage { get; set; }
         public string Name { get; private set; }
+        public double StrainingAction { get; internal set; }
 
         public static List<Member> ProcessMembers(Truss truss)
         {
@@ -111,13 +112,35 @@ namespace TrussAnalysis.Models
         private void CreateStiffnessMatrix_Locally()
         {
             Matrix<double> m = Matrix<double>.Build.DenseOfArray(new double[,] {
-                        {  1,  0, -1,  0 },
-                        {  0,  0,  0,  0 },
-                        { -1,  0,  1,  0 },
-                        {  0,  0,  0,  0 },
+                        {  1,  0,  -1,  0 },
+                        {  0,  0,   0,  0 },
+                        { -1,  0,   1,  0 },
+                        {  0,  0,   0,  0 },
                     });
 
             this.k_local = m * k_member;
+        }
+
+        private void CreateStiffnessMatrix_Locally2()
+        {
+            Matrix<double> m = Matrix<double>.Build.DenseOfArray(new double[,] {
+                        { 1,-1},
+                        {-1, 1},
+                    });
+
+            this.k_local = m * k_member;
+        }
+
+        private void CreateTransformationMatrix2()
+        {
+            double l = (EndNode.Location.X - StartNode.Location.X)/Length;
+            double m = (EndNode.Location.Z - StartNode.Location.Z)/Length;
+
+            this.TransformationMatrix =  Matrix<double>.Build.DenseOfArray(new double[,]
+            {
+            { l, m, 0, 0 },
+            { 0, 0, l, m }
+            });
         }
 
         public void AssignNodes(Node node)
@@ -143,5 +166,32 @@ namespace TrussAnalysis.Models
             this.Name = StartNode.Name + "-" + EndNode.Name;
         }
 
+
+        public double InterpretForceSign()
+        {
+            // Extract displacements in global coordinates
+            Vector<double> startDisp = Vector<double>.Build.Dense(new double[] { U_local[0],  U_local[1] });
+            Vector<double> endDisp = Vector<double>.Build.Dense(new double[] { U_local[2], U_local[3] });
+            Vector<double> startLocation = Vector<double>.Build.Dense(new double[] { StartNode.Location.X, StartNode.Location.Z });
+            Vector<double> endLocation = Vector<double>.Build.Dense(new double[] { EndNode.Location.X, EndNode.Location.Z });
+
+            // Calculate original and deformed lengths
+            double originalLength = this.Length;
+            Vector<double> deformedStart = startLocation + startDisp;
+            Vector<double> deformedEnd = endLocation + endDisp;
+            double deformedLength = (deformedEnd - deformedStart).L2Norm();
+
+            // Determine if the member is in tension or compression
+            if (deformedLength > originalLength)
+            {
+                // Tension: return positive value
+                return Math.Abs(StrainingAction);
+            }
+            else
+            {
+                // Compression: return negative value
+                return -Math.Abs(StrainingAction);
+            }
+        }
     }
 }
