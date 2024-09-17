@@ -1,4 +1,6 @@
-﻿using MathNet.Numerics.LinearAlgebra;
+﻿using Autodesk.Revit.DB;
+using Autodesk.Revit.DB.Structure;
+using MathNet.Numerics.LinearAlgebra;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -27,7 +29,7 @@ namespace TrussAnalysis.Models
 
         public TrussSystem(List<Member> members, List<Node> nodes)
         {
-            this.FactorOfSafety = 1.25;
+            this.FactorOfSafety = 1.4;
 
             this.Members = members;
             this.Nodes = nodes;
@@ -89,9 +91,21 @@ namespace TrussAnalysis.Models
 
                 member.U_local = member.TransformationMatrix * U_Global * member.TransformationMatrix.Transpose();
                 member.N_local = member.k_local * member.U_local;
-                member.StrainingAction = member.N_local[0];
+                member.StrainingAction = Math.Abs(member.N_local[0]);
                 member.InterpretForceSign();
+
+                double appliedStress = (Math.Abs(member.StrainingAction) / member.Area);
+                if (appliedStress * FactorOfSafety > member.YieldStress)
+                {
+                    member.IsSafe = false;
+                }
+                else
+                {
+                    member.IsSafe = true;
+                }
             }
+
+
         }
 
         private void CreateForceVectors(double scale_dead, double scale_live, double scale_braking)
@@ -174,16 +188,27 @@ namespace TrussAnalysis.Models
 
             using (StringWriter stringWriter = new StringWriter())
             {
-                stringWriter.WriteLine($"Total Dead Loads: = {ForceVector_Dead.Sum()}");
-                stringWriter.WriteLine($"Total Live Loads: = {ForceVector_Live.Sum()}");
-                stringWriter.WriteLine($"Total Breaking Loads: = {ForceVector_Braking.Sum()}");
+                stringWriter.WriteLine($"_________________________________________TRUSS ANALYSIS RESULTS_____________________________________________");
+
+                stringWriter.WriteLine($"Total Dead Loads (Tons): = {ForceVector_Dead.Sum()}");
+                stringWriter.WriteLine($"Total Live Loads (Tons): = {ForceVector_Live.Sum()}");
+                stringWriter.WriteLine($"Total Breaking Loads (Tons): = {ForceVector_Braking.Sum()}");
+                stringWriter.WriteLine($"____________________________________________________________________________________________________________");
 
                 stringWriter.WriteLine($"Check Y Loads equalibruim (must be zero): = {ForceVector_Final.Select((value, index) => new { value, index }).Where(x => x.index % 2 == 1).Aggregate(0.0, (sum, x) => sum + x.value)}");
                 stringWriter.WriteLine($"Check X Loads equalibruim (must be zero): = {ForceVector_Final.Select((value, index) => new { value, index }).Where(x => x.index % 2 != 1).Aggregate(0.0, (sum, x) => sum + x.value)}");
+                stringWriter.WriteLine($"____________________________________________________________________________________________________________");
 
-                stringWriter.WriteLine($"Reactions and loads (Node A to Node S): {string.Join(", ", ForceVector_Final)}");
-                stringWriter.WriteLine($"Members straining actions: {string.Join(", ", Members.OrderBy(x=>x.Name).Select(x=>x.StrainingAction))}");
-                stringWriter.WriteLine($"Displacements (Node A to Node S): {string.Join(", ", DisplacementVector)}");
+                stringWriter.WriteLine($"Reactions and loads (Node A to Node S) (Tons): {string.Join(", ", ForceVector_Final)}");
+                stringWriter.WriteLine($"Members straining actions/ Internal Forces (Tons): {string.Join(", ", Members.OrderBy(x=>x.Name).Select(x=>x.StrainingAction))}");
+                stringWriter.WriteLine($"Displacements (Node A to Node S) (ft): {string.Join(", ", DisplacementVector)}");
+                stringWriter.WriteLine($"____________________________________________________________________________________________________________");
+
+                foreach (Member member in Members)
+                {
+                    string safe = member.IsSafe ? "Yes" : "No";
+                    stringWriter.WriteLine($"Member name ({member.Name}): Axial Force (Tons) = {member.StrainingAction} Safe Axially? {safe}");
+                }
 
                 string content = stringWriter.ToString();
 

@@ -53,14 +53,13 @@ namespace TrussAnalysis
 
                 foreach (var member in truss.Members)
                 {
-                    double appliedStress = (Math.Abs(member.StrainingAction) / member.Area) * truss.FactorOfSafety;
-                    if (appliedStress > member.YieldStress)
+                    if (member.IsSafe)
                     {
-                        color = red;
+                        color = green;
                     }
                     else
                     {
-                        color = green;
+                        color = red;
                     }
 
                     ApplySolidColorVisiblityOverrides(view2, member.Element, color, solidFillPatternId);

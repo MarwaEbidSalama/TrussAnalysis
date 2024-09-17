@@ -33,6 +33,8 @@ namespace TrussAnalysis.Models
         public string Name { get; private set; }
         public double StrainingAction { get; internal set; }
 
+        public bool IsSafe{ get; set; }
+
         public static List<Member> ProcessMembers(Truss truss)
         {
             List<FamilyInstance> revit_members = truss.Members.Select(x => truss.Document.GetElement(x) as FamilyInstance).ToList();

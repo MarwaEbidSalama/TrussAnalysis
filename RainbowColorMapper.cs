@@ -27,12 +27,12 @@ namespace TrussAnalysis
             // Define color stops for the rainbow
             Color[] colorStops = new Color[]
             {
-            new Autodesk.Revit.DB.Color(255, 0, 0),    // red
-            new Autodesk.Revit.DB.Color(255, 165, 0),  // orange
-            new Autodesk.Revit.DB.Color(255, 255, 0),  // yellow
-            new Autodesk.Revit.DB.Color(0, 128, 0),    // green
-            new Autodesk.Revit.DB.Color(0, 255, 255),  // cyan
             new Autodesk.Revit.DB.Color(0, 0, 255),    // blue
+            new Autodesk.Revit.DB.Color(0, 255, 255),  // cyan
+            new Autodesk.Revit.DB.Color(0, 128, 0),    // green
+            new Autodesk.Revit.DB.Color(255, 255, 0),  // yellow
+            new Autodesk.Revit.DB.Color(255, 165, 0),  // orange
+            new Autodesk.Revit.DB.Color(255, 0, 0),    // red
             };
 
 

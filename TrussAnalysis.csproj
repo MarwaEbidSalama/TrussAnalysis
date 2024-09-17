@@ -83,8 +83,10 @@
     <Compile Include="StructuralEquationSolver.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="bridge.rvt" />
     <None Include="packages.config" />
     <None Include="TrussAnalysis.addin" />
+    <None Include="Warren_9Adjusted.rfa" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Properties\Resources.resx">
