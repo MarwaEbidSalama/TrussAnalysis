@@ -190,24 +190,24 @@ namespace TrussAnalysis.Models
             {
                 stringWriter.WriteLine($"_________________________________________TRUSS ANALYSIS RESULTS_____________________________________________");
 
-                stringWriter.WriteLine($"Total Dead Loads (Tons): = {ForceVector_Dead.Sum()}");
-                stringWriter.WriteLine($"Total Live Loads (Tons): = {ForceVector_Live.Sum()}");
-                stringWriter.WriteLine($"Total Breaking Loads (Tons): = {ForceVector_Braking.Sum()}");
+                stringWriter.WriteLine($"Total Dead Loads (Tons): = {ForceVector_Dead.Sum()/1000}");
+                stringWriter.WriteLine($"Total Live Loads (Tons): = {ForceVector_Live.Sum() / 1000}");
+                stringWriter.WriteLine($"Total Breaking Loads (Tons): = {ForceVector_Braking.Sum() / 1000}");
                 stringWriter.WriteLine($"____________________________________________________________________________________________________________");
 
                 stringWriter.WriteLine($"Check Y Loads equalibruim (must be zero): = {ForceVector_Final.Select((value, index) => new { value, index }).Where(x => x.index % 2 == 1).Aggregate(0.0, (sum, x) => sum + x.value)}");
                 stringWriter.WriteLine($"Check X Loads equalibruim (must be zero): = {ForceVector_Final.Select((value, index) => new { value, index }).Where(x => x.index % 2 != 1).Aggregate(0.0, (sum, x) => sum + x.value)}");
                 stringWriter.WriteLine($"____________________________________________________________________________________________________________");
 
-                stringWriter.WriteLine($"Reactions and loads (Node A to Node S) (Tons): {string.Join(", ", ForceVector_Final)}");
-                stringWriter.WriteLine($"Members straining actions/ Internal Forces (Tons): {string.Join(", ", Members.OrderBy(x=>x.Name).Select(x=>x.StrainingAction))}");
+                stringWriter.WriteLine($"Reactions and loads (Node A to Node S) (Tons): {string.Join(", ", ForceVector_Final / 1000)}");
+                //stringWriter.WriteLine($"Members straining actions/ Internal Forces (Tons): {string.Join(", ", Members.OrderBy(x=>x.Name).Select(x=>x.StrainingAction / 1000))}");
                 stringWriter.WriteLine($"Displacements (Node A to Node S) (ft): {string.Join(", ", DisplacementVector)}");
                 stringWriter.WriteLine($"____________________________________________________________________________________________________________");
 
                 foreach (Member member in Members)
                 {
                     string safe = member.IsSafe ? "Yes" : "No";
-                    stringWriter.WriteLine($"Member name ({member.Name}): Axial Force (Tons) = {member.StrainingAction} Safe Axially? {safe}");
+                    stringWriter.WriteLine($"Member name ({member.Name}): Axial Force (Tons) = {member.StrainingAction/1000} Safe Axially? {safe}");
                 }
 
                 string content = stringWriter.ToString();
